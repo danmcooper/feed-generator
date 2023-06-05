@@ -12,6 +12,8 @@ import {
   isCommit,
 } from '../lexicon/types/com/atproto/sync/subscribeRepos'
 import { Database } from '../db'
+import { AtpAgent } from '@atproto/api'
+import dotenv from 'dotenv'
 
 export abstract class FirehoseSubscriptionBase {
   public sub: Subscription<RepoEvent>
@@ -34,12 +36,35 @@ export abstract class FirehoseSubscriptionBase {
     })
   }
 
-  abstract handleEvent(evt: RepoEvent): Promise<void>
+  abstract handleEvent(
+    evt: RepoEvent,
+    agent,
+    MAX_THRESHOLD,
+    MIN_THRESHOLD,
+    MIN_AGE_OF_POST_IN_MS,
+  ): Promise<void>
 
   async run() {
+    dotenv.config()
+
+    // const handle = process.env.BLUESKY_HANDLE!
+    // const password = process.env.BLUESKY_PASSWORD!
+    const MAX_THRESHOLD = process.env.BLUESKY_MAX_THRESHOLD!
+    const MIN_THRESHOLD = process.env.BLUESKY_MIN_THRESHOLD!
+    const MIN_AGE_OF_POST_IN_MS = process.env.BLUESKY_MIN_AGE_OF_POST_IN_MS!
+
+    // const agent = new AtpAgent({ service: 'https://bsky.social' })
+    // await agent.login({ identifier: handle, password })
+
     for await (const evt of this.sub) {
       try {
-        await this.handleEvent(evt)
+        await this.handleEvent(
+          evt,
+          undefined,
+          MAX_THRESHOLD,
+          MIN_THRESHOLD,
+          MIN_AGE_OF_POST_IN_MS,
+        )
       } catch (err) {
         console.error('repo subscription could not handle message', err)
       }
