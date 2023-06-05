@@ -42,6 +42,7 @@ export abstract class FirehoseSubscriptionBase {
     MAX_THRESHOLD,
     MIN_THRESHOLD,
     MIN_AGE_OF_POST_IN_MS,
+    MAX_AGE_OF_POST_IN_MS,
   ): Promise<void>
 
   async run() {
@@ -52,6 +53,7 @@ export abstract class FirehoseSubscriptionBase {
     const MAX_THRESHOLD = process.env.BLUESKY_MAX_THRESHOLD!
     const MIN_THRESHOLD = process.env.BLUESKY_MIN_THRESHOLD!
     const MIN_AGE_OF_POST_IN_MS = process.env.BLUESKY_MIN_AGE_OF_POST_IN_MS!
+    const MAX_AGE_OF_POST_IN_MS = process.env.BLUESKY_MAX_AGE_OF_POST_IN_MS!
 
     // const agent = new AtpAgent({ service: 'https://bsky.social' })
     // await agent.login({ identifier: handle, password })
@@ -64,6 +66,7 @@ export abstract class FirehoseSubscriptionBase {
           MAX_THRESHOLD,
           MIN_THRESHOLD,
           MIN_AGE_OF_POST_IN_MS,
+          MAX_AGE_OF_POST_IN_MS,
         )
       } catch (err) {
         console.error('repo subscription could not handle message', err)

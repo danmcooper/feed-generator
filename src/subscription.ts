@@ -12,6 +12,7 @@ export class FirehoseSubscription extends FirehoseSubscriptionBase {
     MAX_THRESHOLD: number,
     MIN_THRESHOLD: number,
     MIN_AGE_OF_POST_IN_MS: number,
+    MAX_AGE_OF_POST_IN_MS: number,
   ) {
     if (!isCommit(evt)) return
     const ops = await getOpsByType(evt)
@@ -25,6 +26,7 @@ export class FirehoseSubscription extends FirehoseSubscriptionBase {
       MAX_THRESHOLD,
       MIN_THRESHOLD,
       MIN_AGE_OF_POST_IN_MS,
+      MAX_AGE_OF_POST_IN_MS,
     )
 
     if (postsToDelete.length > 0) {
@@ -65,6 +67,7 @@ const process = (
   MAX_THRESHOLD,
   MIN_THRESHOLD,
   MIN_AGE_OF_POST_IN_MS,
+  MAX_AGE_OF_POST_IN_MS,
 ) => {
   let postsToDelete = ops.posts.deletes
     .map((del) => {
@@ -118,17 +121,17 @@ const process = (
 
       postsByUri[like.record.subject.uri].likes++
       if (
-        postsByUri[like.record.subject.uri].likes > MAX_THRESHOLD &&
-        postsByUri[like.record.subject.uri].added
+        exceedsThreshold(postsByUri[like.record.subject.uri], MAX_THRESHOLD)
       ) {
-        //exceeded threshold
         postsToDelete = [...postsToDelete, like.record.subject.uri]
         delete postsByUri[like.record.subject.uri]
       } else if (
-        postsByUri[like.record.subject.uri].likes > MIN_THRESHOLD &&
-        !postsByUri[like.record.subject.uri].added &&
-        postsByUri[like.record.subject.uri].time <
-          new Date().getTime() - MIN_AGE_OF_POST_IN_MS
+        entersThreshold(
+          postsByUri[like.record.subject.uri],
+          MIN_THRESHOLD,
+          MIN_AGE_OF_POST_IN_MS,
+          MAX_AGE_OF_POST_IN_MS,
+        )
       ) {
         // add in
         postsToCreate = [
@@ -155,6 +158,20 @@ const process = (
   })
 
   return { postsToDelete, postsToCreate }
+}
+
+const exceedsThreshold = (post, maxThreshold) => {
+  return post.likes > maxThreshold && post.added
+}
+
+const entersThreshold = (post, minThreshold, minAge, maxAge) => {
+  const now = new Date().getTime()
+  return (
+    post.likes > minThreshold &&
+    !post.added &&
+    post.time < now - minAge &&
+    post.time > now - maxAge
+  )
 }
 
 const cleanupOlderThan23Hours = (postsByUri) => {
