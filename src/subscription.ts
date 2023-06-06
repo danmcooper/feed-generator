@@ -64,7 +64,6 @@ const showCount = async (db) => {
 const postsByUri = {}
 const postsInDBByHour = {}
 let currentHourIndex = 0
-let needsSync = true
 
 const process = async (
   ops,
@@ -108,15 +107,9 @@ const process = async (
     postsInDBByHour[currentHourIndex] = []
     cleanupOlderThan23Hours(postsByUri)
     await showCount(db)
-  }
-
-  if (currentHourIndex === 1) {
-    if (needsSync) {
+    if (currentHourIndex === 1) {
       await syncAuthorFollowers()
-      needsSync = false
     }
-  } else {
-    needsSync = true
   }
 
   for (const post of ops.posts.creates) {
