@@ -55,6 +55,14 @@ export abstract class FirehoseSubscriptionBase {
     const MIN_AGE_OF_POST_IN_MS = process.env.BLUESKY_MIN_AGE_OF_POST_IN_MS!
     const MAX_AGE_OF_POST_IN_MS = process.env.BLUESKY_MAX_AGE_OF_POST_IN_MS!
 
+    console.log(`Started: ${new Date().toString}`);
+    console.log(`MAX_THRESHOLD: ${MAX_THRESHOLD}`);
+    console.log(`MIN_THRESHOLD: ${MIN_THRESHOLD}`);
+    console.log(`MIN_AGE_OF_POST_IN_MS: ${MIN_AGE_OF_POST_IN_MS}`);
+    console.log(`MAX_AGE_OF_POST_IN_MS: ${MAX_AGE_OF_POST_IN_MS}`);
+
+
+
     // const agent = new AtpAgent({ service: 'https://bsky.social' })
     // await agent.login({ identifier: handle, password })
 
