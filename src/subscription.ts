@@ -107,7 +107,7 @@ const process = async (
     cleanupOlderThan23Hours(postsByUri)
   }
 
-  if (currentHourIndex === 1 || test()) {
+  if (currentHourIndex === 1) {
     if (needsSync) {
       await syncAuthorFollowers()
       needsSync = false
@@ -209,16 +209,5 @@ const rejectPost = (post, authorFollowersCount, maxFollowersAllowed) => {
     // }
     return true
   }
-  return false
-}
-
-let testVar = 0
-
-const test = () => {
-  if (testVar === 1000) {
-    testVar = 0
-    return true
-  }
-  testVar++
   return false
 }
