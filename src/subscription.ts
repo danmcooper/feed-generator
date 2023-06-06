@@ -30,6 +30,7 @@ export class FirehoseSubscription extends FirehoseSubscriptionBase {
       authorFollowersCount,
       maxFollowersAllowed,
       syncAuthorFollowers,
+      this.db,
     )
 
     if (postsToDelete.length > 0) {
@@ -39,7 +40,7 @@ export class FirehoseSubscription extends FirehoseSubscriptionBase {
         .where('uri', 'in', postsToDelete)
         .execute()
 
-      showCount(this.db)
+      // showCount(this.db)
     }
     if (postsToCreate.length > 0) {
       // console.log(`CREATE: ${JSON.stringify(postsToCreate, null, 2)}`)
@@ -49,7 +50,7 @@ export class FirehoseSubscription extends FirehoseSubscriptionBase {
         .onConflict((oc) => oc.doNothing())
         .execute()
 
-      showCount(this.db)
+      // showCount(this.db)
     }
   }
 }
@@ -75,6 +76,7 @@ const process = async (
   authorFollowersCount,
   maxFollowersAllowed,
   syncAuthorFollowers,
+  db,
 ) => {
   let postsToDelete = ops.posts.deletes
     .map((del) => {
@@ -105,6 +107,7 @@ const process = async (
     currentHourIndex = currentHour
     postsInDBByHour[currentHourIndex] = []
     cleanupOlderThan23Hours(postsByUri)
+    await showCount(db)
   }
 
   if (currentHourIndex === 1) {
