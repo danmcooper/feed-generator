@@ -13,24 +13,27 @@ export class FirehoseSubscription extends FirehoseSubscriptionBase {
     MIN_THRESHOLD: number,
     MIN_AGE_OF_POST_IN_MS: number,
     MAX_AGE_OF_POST_IN_MS: number,
+    authorFollowersCount: object,
+    maxFollowersAllowed: number,
+    syncAuthorFollowers: () => Promise<void>,
   ) {
     if (!isCommit(evt)) return
     const ops = await getOpsByType(evt)
 
-    // console.log(`MAX_THRESHOLD: ${MAX_THRESHOLD}`)
-    // console.log(`MIN_THRESHOLD: ${MIN_THRESHOLD}`)
-
-    const { postsToCreate, postsToDelete } = process(
+    const { postsToCreate, postsToDelete } = await process(
       ops,
       agent,
       MAX_THRESHOLD,
       MIN_THRESHOLD,
       MIN_AGE_OF_POST_IN_MS,
       MAX_AGE_OF_POST_IN_MS,
+      authorFollowersCount,
+      maxFollowersAllowed,
+      syncAuthorFollowers,
     )
 
     if (postsToDelete.length > 0) {
-      console.log(`DELETE: ${JSON.stringify(postsToDelete, null, 2)}`)
+      // console.log(`DELETE: ${JSON.stringify(postsToDelete, null, 2)}`)
       await this.db
         .deleteFrom('post')
         .where('uri', 'in', postsToDelete)
@@ -39,7 +42,7 @@ export class FirehoseSubscription extends FirehoseSubscriptionBase {
       showCount(this.db)
     }
     if (postsToCreate.length > 0) {
-      console.log(`CREATE: ${JSON.stringify(postsToCreate, null, 2)}`)
+      // console.log(`CREATE: ${JSON.stringify(postsToCreate, null, 2)}`)
       await this.db
         .insertInto('post')
         .values(postsToCreate)
@@ -60,14 +63,18 @@ const showCount = async (db) => {
 const postsByUri = {}
 const postsInDBByHour = {}
 let currentHourIndex = 0
+let needsSync = true
 
-const process = (
+const process = async (
   ops,
   agent,
   MAX_THRESHOLD,
   MIN_THRESHOLD,
   MIN_AGE_OF_POST_IN_MS,
   MAX_AGE_OF_POST_IN_MS,
+  authorFollowersCount,
+  maxFollowersAllowed,
+  syncAuthorFollowers,
 ) => {
   let postsToDelete = ops.posts.deletes
     .map((del) => {
@@ -100,9 +107,18 @@ const process = (
     cleanupOlderThan23Hours(postsByUri)
   }
 
+  if (currentHourIndex === 1 || test()) {
+    if (needsSync) {
+      await syncAuthorFollowers()
+      needsSync = false
+    }
+  } else {
+    needsSync = true
+  }
+
   for (const post of ops.posts.creates) {
     // ignore if reply, hey, my feed my rules
-    if (post.record.reply) continue
+    if (rejectPost(post, authorFollowersCount, maxFollowersAllowed)) continue
 
     // add to map
     postsByUri[post.uri] = {
@@ -181,4 +197,28 @@ const cleanupOlderThan23Hours = (postsByUri) => {
       delete postsByUri[uri]
     }
   })
+}
+
+const rejectPost = (post, authorFollowersCount, maxFollowersAllowed) => {
+  if (
+    post.record.reply ||
+    authorFollowersCount[post.author] > maxFollowersAllowed
+  ) {
+    // if (!post.record.reply) {
+    //   console.log(`REJECTED! followers: ${authorFollowersCount[post.author]}`)
+    // }
+    return true
+  }
+  return false
+}
+
+let testVar = 0
+
+const test = () => {
+  if (testVar === 1000) {
+    testVar = 0
+    return true
+  }
+  testVar++
+  return false
 }

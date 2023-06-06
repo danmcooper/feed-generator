@@ -14,6 +14,20 @@ import {
 import { Database } from '../db'
 import { AtpAgent } from '@atproto/api'
 import dotenv from 'dotenv'
+import * as fs from 'node:fs/promises'
+
+let authorFollowersCount = {}
+
+const syncAuthorFollowers = async () => {
+  try {
+    const result = await fs.readFile('authorFollowers.json', 'utf8')
+    authorFollowersCount = JSON.parse(result)
+    console.log(`synced ${Object.keys(authorFollowersCount).length} authors`)
+  } catch {
+    console.log(`DANG IT`)
+    authorFollowersCount = {}
+  }
+}
 
 export abstract class FirehoseSubscriptionBase {
   public sub: Subscription<RepoEvent>
@@ -43,6 +57,9 @@ export abstract class FirehoseSubscriptionBase {
     MIN_THRESHOLD,
     MIN_AGE_OF_POST_IN_MS,
     MAX_AGE_OF_POST_IN_MS,
+    authorFollowersCount,
+    maxFollowersAllowed,
+    syncAuthorFollowers,
   ): Promise<void>
 
   async run() {
@@ -50,21 +67,31 @@ export abstract class FirehoseSubscriptionBase {
 
     // const handle = process.env.BLUESKY_HANDLE!
     // const password = process.env.BLUESKY_PASSWORD!
+
     const MAX_THRESHOLD = process.env.BLUESKY_MAX_THRESHOLD!
     const MIN_THRESHOLD = process.env.BLUESKY_MIN_THRESHOLD!
     const MIN_AGE_OF_POST_IN_MS = process.env.BLUESKY_MIN_AGE_OF_POST_IN_MS!
     const MAX_AGE_OF_POST_IN_MS = process.env.BLUESKY_MAX_AGE_OF_POST_IN_MS!
+    const maxFollowersAllowed = process.env.BLUESKY_MAX_FOLLOWERS_ALLOWED!
 
-    const timeFormat = { month: 'numeric', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false, timeZoneName: 'short', timeZone: 'America/Los_Angeles' } as const;
-    const formatter = new Intl.DateTimeFormat([], timeFormat);
+    await syncAuthorFollowers()
 
-    console.log(formatter.format(new Date()));
-    console.log(`MAX_THRESHOLD: ${MAX_THRESHOLD}`);
-    console.log(`MIN_THRESHOLD: ${MIN_THRESHOLD}`);
-    console.log(`MIN_AGE_OF_POST_IN_MS: ${MIN_AGE_OF_POST_IN_MS}`);
-    console.log(`MAX_AGE_OF_POST_IN_MS: ${MAX_AGE_OF_POST_IN_MS}`);
+    const timeFormat = {
+      month: 'numeric',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZoneName: 'short',
+      timeZone: 'America/Los_Angeles',
+    } as const
+    const formatter = new Intl.DateTimeFormat([], timeFormat)
 
-
+    console.log(formatter.format(new Date()))
+    console.log(`MAX_THRESHOLD: ${MAX_THRESHOLD}`)
+    console.log(`MIN_THRESHOLD: ${MIN_THRESHOLD}`)
+    console.log(`MIN_AGE_OF_POST_IN_MS: ${MIN_AGE_OF_POST_IN_MS}`)
+    console.log(`MAX_AGE_OF_POST_IN_MS: ${MAX_AGE_OF_POST_IN_MS}`)
 
     // const agent = new AtpAgent({ service: 'https://bsky.social' })
     // await agent.login({ identifier: handle, password })
@@ -78,6 +105,9 @@ export abstract class FirehoseSubscriptionBase {
           MIN_THRESHOLD,
           MIN_AGE_OF_POST_IN_MS,
           MAX_AGE_OF_POST_IN_MS,
+          authorFollowersCount,
+          maxFollowersAllowed,
+          syncAuthorFollowers,
         )
       } catch (err) {
         console.error('repo subscription could not handle message', err)
