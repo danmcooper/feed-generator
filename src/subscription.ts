@@ -196,13 +196,13 @@ const cleanupOlderThan23Hours = (postsByUri) => {
 }
 
 const rejectPost = (post, authorFollowersCount, maxFollowersAllowed) => {
+  const textLower = post.record.text.toLowerCase()
   if (
     post.record.reply ||
-    authorFollowersCount[post.author] > maxFollowersAllowed
+    authorFollowersCount[post.author] > maxFollowersAllowed ||
+    textLower.includes('hello world') ||
+    textLower.includes('hello, world')
   ) {
-    // if (!post.record.reply) {
-    //   console.log(`REJECTED! followers: ${authorFollowersCount[post.author]}`)
-    // }
     return true
   }
   return false
