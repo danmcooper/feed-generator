@@ -5,6 +5,8 @@ import {
 import { FirehoseSubscriptionBase, getOpsByType } from './util/subscription'
 import { AtpAgent } from '@atproto/api'
 
+const rejectList = {}
+
 export class FirehoseSubscription extends FirehoseSubscriptionBase {
   async handleEvent(
     evt: RepoEvent,
@@ -13,9 +15,7 @@ export class FirehoseSubscription extends FirehoseSubscriptionBase {
     MIN_THRESHOLD: number,
     MIN_AGE_OF_POST_IN_MS: number,
     MAX_AGE_OF_POST_IN_MS: number,
-    authorFollowersCount: object,
     maxFollowersAllowed: number,
-    syncAuthorFollowers: () => Promise<void>,
   ) {
     if (!isCommit(evt)) return
     const ops = await getOpsByType(evt)
@@ -27,30 +27,22 @@ export class FirehoseSubscription extends FirehoseSubscriptionBase {
       MIN_THRESHOLD,
       MIN_AGE_OF_POST_IN_MS,
       MAX_AGE_OF_POST_IN_MS,
-      authorFollowersCount,
       maxFollowersAllowed,
-      syncAuthorFollowers,
       this.db,
     )
 
     if (postsToDelete.length > 0) {
-      // console.log(`DELETE: ${JSON.stringify(postsToDelete, null, 2)}`)
       await this.db
         .deleteFrom('post')
         .where('uri', 'in', postsToDelete)
         .execute()
-
-      // showCount(this.db)
     }
     if (postsToCreate.length > 0) {
-      // console.log(`CREATE: ${JSON.stringify(postsToCreate, null, 2)}`)
       await this.db
         .insertInto('post')
         .values(postsToCreate)
         .onConflict((oc) => oc.doNothing())
         .execute()
-
-      // showCount(this.db)
     }
   }
 }
@@ -72,9 +64,7 @@ const process = async (
   MIN_THRESHOLD,
   MIN_AGE_OF_POST_IN_MS,
   MAX_AGE_OF_POST_IN_MS,
-  authorFollowersCount,
   maxFollowersAllowed,
-  syncAuthorFollowers,
   db,
 ) => {
   let postsToDelete = ops.posts.deletes
@@ -107,14 +97,19 @@ const process = async (
     postsInDBByHour[currentHourIndex] = []
     cleanupOlderThan23Hours(postsByUri)
     await showCount(db)
-    if (currentHourIndex === 1) {
-      await syncAuthorFollowers()
-    }
   }
 
   for (const post of ops.posts.creates) {
+    if (rejectList[post.author]) {
+      continue
+    }
+
+    const author = await agent?.api.app.bsky.actor.getProfile({
+      actor: post.author,
+    })
+    // console.log(`author: ${JSON.stringify(author.data.handle)}`)
     // ignore if reply, hey, my feed my rules
-    if (rejectPost(post, authorFollowersCount, maxFollowersAllowed)) continue
+    if (rejectPost(post, author, maxFollowersAllowed)) continue
 
     // add to map
     postsByUri[post.uri] = {
@@ -127,10 +122,6 @@ const process = async (
 
   for (const like of ops.likes.creates) {
     if (postsByUri[like.record.subject.uri]) {
-      // console.log('jjj')
-      // console.log(postsByUri[like.record.subject.uri].time / 1000)
-      // console.log((new Date().getTime() - MIN_AGE_OF_POST_IN_MS) / 1000)
-
       postsByUri[like.record.subject.uri].likes++
       if (
         exceedsThreshold(postsByUri[like.record.subject.uri], MAX_THRESHOLD)
@@ -195,11 +186,15 @@ const cleanupOlderThan23Hours = (postsByUri) => {
   })
 }
 
-const rejectPost = (post, authorFollowersCount, maxFollowersAllowed) => {
+const rejectPost = (post, author, maxFollowersAllowed) => {
   const textLower = post.record.text.toLowerCase()
+  if (author.data.followersCount > maxFollowersAllowed) {
+    rejectList[post.author] = true
+    return true
+  }
   if (
+    author.data.postsCount < 4 ||
     post.record.reply ||
-    authorFollowersCount[post.author] > maxFollowersAllowed ||
     textLower.includes('hello world') ||
     textLower.includes('hello, world')
   ) {

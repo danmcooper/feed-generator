@@ -14,20 +14,7 @@ import {
 import { Database } from '../db'
 import { AtpAgent } from '@atproto/api'
 import dotenv from 'dotenv'
-import * as fs from 'node:fs/promises'
-
-let authorFollowersCount = {}
-
-const syncAuthorFollowers = async () => {
-  try {
-    const result = await fs.readFile('authorFollowers.json', 'utf8')
-    authorFollowersCount = JSON.parse(result)
-    console.log(`synced ${Object.keys(authorFollowersCount).length} authors`)
-  } catch {
-    console.log(`DANG IT`)
-    authorFollowersCount = {}
-  }
-}
+// import * as fs from 'node:fs/promises'
 
 export abstract class FirehoseSubscriptionBase {
   public sub: Subscription<RepoEvent>
@@ -57,13 +44,17 @@ export abstract class FirehoseSubscriptionBase {
     MIN_THRESHOLD,
     MIN_AGE_OF_POST_IN_MS,
     MAX_AGE_OF_POST_IN_MS,
-    authorFollowersCount,
     maxFollowersAllowed,
-    syncAuthorFollowers,
   ): Promise<void>
 
   async run() {
     dotenv.config()
+
+    const handle = process.env.BLUESKY_HANDLE!
+    const password = process.env.BLUESKY_PASSWORD!
+
+    const agent = new AtpAgent({ service: 'https://bsky.social' })
+    await agent.login({ identifier: handle, password })
 
     // const handle = process.env.BLUESKY_HANDLE!
     // const password = process.env.BLUESKY_PASSWORD!
@@ -73,8 +64,6 @@ export abstract class FirehoseSubscriptionBase {
     const MIN_AGE_OF_POST_IN_MS = process.env.BLUESKY_MIN_AGE_OF_POST_IN_MS!
     const MAX_AGE_OF_POST_IN_MS = process.env.BLUESKY_MAX_AGE_OF_POST_IN_MS!
     const maxFollowersAllowed = process.env.BLUESKY_MAX_FOLLOWERS_ALLOWED!
-
-    await syncAuthorFollowers()
 
     const timeFormat = {
       month: 'numeric',
@@ -100,14 +89,12 @@ export abstract class FirehoseSubscriptionBase {
       try {
         await this.handleEvent(
           evt,
-          undefined,
+          agent,
           MAX_THRESHOLD,
           MIN_THRESHOLD,
           MIN_AGE_OF_POST_IN_MS,
           MAX_AGE_OF_POST_IN_MS,
-          authorFollowersCount,
           maxFollowersAllowed,
-          syncAuthorFollowers,
         )
       } catch (err) {
         console.error('repo subscription could not handle message', err)
