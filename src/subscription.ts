@@ -132,6 +132,7 @@ const process = async (
         entersThreshold(
           postsByUri[like.record.subject.uri],
           MIN_THRESHOLD,
+          MAX_THRESHOLD,
           MIN_AGE_OF_POST_IN_MS,
           MAX_AGE_OF_POST_IN_MS,
         )
@@ -167,10 +168,11 @@ const exceedsThreshold = (post, maxThreshold) => {
   return post.likes > maxThreshold && post.added
 }
 
-const entersThreshold = (post, minThreshold, minAge, maxAge) => {
+const entersThreshold = (post, minThreshold, maxThreshold, minAge, maxAge) => {
   const now = new Date().getTime()
   return (
     post.likes > minThreshold &&
+    post.likes <= maxThreshold &&
     !post.added &&
     post.time < now - minAge &&
     post.time > now - maxAge
