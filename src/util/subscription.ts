@@ -47,62 +47,70 @@ export abstract class FirehoseSubscriptionBase {
     maxFollowersAllowed,
   ): Promise<void>
 
-  async run() {
-    dotenv.config()
+  async run(subscriptionReconnectDelay: number) {
+    try {
+      dotenv.config()
 
-    const handle = process.env.BLUESKY_HANDLE!
-    const password = process.env.BLUESKY_PASSWORD!
+      const handle = process.env.BLUESKY_HANDLE!
+      const password = process.env.BLUESKY_PASSWORD!
 
-    const agent = new AtpAgent({ service: 'https://bsky.social' })
-    await agent.login({ identifier: handle, password })
+      const agent = new AtpAgent({ service: 'https://bsky.social' })
+      await agent.login({ identifier: handle, password })
 
-    // const handle = process.env.BLUESKY_HANDLE!
-    // const password = process.env.BLUESKY_PASSWORD!
+      // const handle = process.env.BLUESKY_HANDLE!
+      // const password = process.env.BLUESKY_PASSWORD!
 
-    const MAX_THRESHOLD = process.env.BLUESKY_MAX_THRESHOLD!
-    const MIN_THRESHOLD = process.env.BLUESKY_MIN_THRESHOLD!
-    const MIN_AGE_OF_POST_IN_MS = process.env.BLUESKY_MIN_AGE_OF_POST_IN_MS!
-    const MAX_AGE_OF_POST_IN_MS = process.env.BLUESKY_MAX_AGE_OF_POST_IN_MS!
-    const maxFollowersAllowed = process.env.BLUESKY_MAX_FOLLOWERS_ALLOWED!
+      const MAX_THRESHOLD = process.env.BLUESKY_MAX_THRESHOLD!
+      const MIN_THRESHOLD = process.env.BLUESKY_MIN_THRESHOLD!
+      const MIN_AGE_OF_POST_IN_MS = process.env.BLUESKY_MIN_AGE_OF_POST_IN_MS!
+      const MAX_AGE_OF_POST_IN_MS = process.env.BLUESKY_MAX_AGE_OF_POST_IN_MS!
+      const maxFollowersAllowed = process.env.BLUESKY_MAX_FOLLOWERS_ALLOWED!
 
-    const timeFormat = {
-      month: 'numeric',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-      timeZoneName: 'short',
-      timeZone: 'America/Los_Angeles',
-    } as const
-    const formatter = new Intl.DateTimeFormat([], timeFormat)
+      const timeFormat = {
+        month: 'numeric',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZoneName: 'short',
+        timeZone: 'America/Los_Angeles',
+      } as const
+      const formatter = new Intl.DateTimeFormat([], timeFormat)
 
-    console.log(formatter.format(new Date()))
-    console.log(`MAX_THRESHOLD: ${MAX_THRESHOLD}`)
-    console.log(`MIN_THRESHOLD: ${MIN_THRESHOLD}`)
-    console.log(`MIN_AGE_OF_POST_IN_MS: ${MIN_AGE_OF_POST_IN_MS}`)
-    console.log(`MAX_AGE_OF_POST_IN_MS: ${MAX_AGE_OF_POST_IN_MS}`)
+      console.log(formatter.format(new Date()))
+      console.log(`MAX_THRESHOLD: ${MAX_THRESHOLD}`)
+      console.log(`MIN_THRESHOLD: ${MIN_THRESHOLD}`)
+      console.log(`MIN_AGE_OF_POST_IN_MS: ${MIN_AGE_OF_POST_IN_MS}`)
+      console.log(`MAX_AGE_OF_POST_IN_MS: ${MAX_AGE_OF_POST_IN_MS}`)
 
-    // const agent = new AtpAgent({ service: 'https://bsky.social' })
-    // await agent.login({ identifier: handle, password })
+      // const agent = new AtpAgent({ service: 'https://bsky.social' })
+      // await agent.login({ identifier: handle, password })
 
-    for await (const evt of this.sub) {
-      try {
-        await this.handleEvent(
-          evt,
-          agent,
-          MAX_THRESHOLD,
-          MIN_THRESHOLD,
-          MIN_AGE_OF_POST_IN_MS,
-          MAX_AGE_OF_POST_IN_MS,
-          maxFollowersAllowed,
-        )
-      } catch (err) {
-        console.error('repo subscription could not handle message', err)
+      for await (const evt of this.sub) {
+        try {
+          await this.handleEvent(
+            evt,
+            agent,
+            MAX_THRESHOLD,
+            MIN_THRESHOLD,
+            MIN_AGE_OF_POST_IN_MS,
+            MAX_AGE_OF_POST_IN_MS,
+            maxFollowersAllowed,
+          )
+        } catch (err) {
+          console.error('repo subscription could not handle message', err)
+        }
+        // update stored cursor every 20 events or so
+        if (isCommit(evt) && evt.seq % 20 === 0) {
+          await this.updateCursor(evt.seq)
+        }
       }
-      // update stored cursor every 20 events or so
-      if (isCommit(evt) && evt.seq % 20 === 0) {
-        await this.updateCursor(evt.seq)
-      }
+    } catch (err) {
+      console.error('repo subscription errored', err)
+      setTimeout(
+        () => this.run(subscriptionReconnectDelay),
+        subscriptionReconnectDelay,
+      )
     }
   }
 
