@@ -107,8 +107,7 @@ const process = async (
     const author = await agent?.api.app.bsky.actor.getProfile({
       actor: post.author,
     })
-    // console.log(`author: ${JSON.stringify(author.data.handle)}`)
-    // ignore if reply, hey, my feed my rules
+
     if (rejectPost(post, author, maxFollowersAllowed)) continue
 
     // add to map
@@ -137,16 +136,24 @@ const process = async (
           MAX_AGE_OF_POST_IN_MS,
         )
       ) {
-        // add in
-        postsToCreate = [
-          ...postsToCreate,
-          postsByUri[like.record.subject.uri].post,
-        ]
-        postsByUri[like.record.subject.uri].added = true
-        postsInDBByHour[currentHourIndex] = [
-          ...postsInDBByHour[currentHourIndex],
-          like.record.subject.uri,
-        ]
+        const fullPost = await agent?.api.app.bsky.feed.getPosts({
+          uris: [like.record.subject.uri],
+        })
+
+        if (passesCheck(fullPost)) {
+          postsToCreate = [
+            ...postsToCreate,
+            postsByUri[like.record.subject.uri].post,
+          ]
+          postsByUri[like.record.subject.uri].added = true
+          postsInDBByHour[currentHourIndex] = [
+            ...postsInDBByHour[currentHourIndex],
+            like.record.subject.uri,
+          ]
+        } else {
+          rejectList[fullPost.data.posts[0].author.did] = true
+          delete postsByUri[fullPost.data.posts[0].uri]
+        }
       }
     }
   }
@@ -203,4 +210,11 @@ const rejectPost = (post, author, maxFollowersAllowed) => {
     return true
   }
   return false
+}
+
+const passesCheck = (fullPost) => {
+  if (fullPost.data.posts[0]?.labels[0]?.val?.length > 0) {
+    return false
+  }
+  return true
 }
