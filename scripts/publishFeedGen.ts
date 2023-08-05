@@ -25,7 +25,7 @@ const run = async () => {
 
   // (Optional) A description of your feed
   // Ex: Top trending content from the whole network
-  const description = `(ALPHA) Not too hot, not too cold. Just right. Probably by an author you don't follow.`
+  const description = `Not too hot, not too cold. Just right (and SFW). By an author you probably don't follow.`
 
   // (Optional) The path to an image to be used as your feed's avatar
   // Ex: ~/path/to/avatar.jpeg
