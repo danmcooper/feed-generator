@@ -205,7 +205,9 @@ const rejectPost = (post, author, maxFollowersAllowed) => {
     author.data.postsCount < 4 ||
     post.record.reply ||
     textLower.includes('hello world') ||
-    textLower.includes('hello, world')
+    textLower.includes('hello, world') ||
+    textLower.includes('#furry') ||
+    textLower.includes('#furryart')
   ) {
     return true
   }
