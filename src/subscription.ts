@@ -201,13 +201,13 @@ const rejectPost = (post, author, maxFollowersAllowed) => {
     rejectList[post.author] = true
     return true
   }
+  const regex = /#.*fur.*?/gi
   if (
     author.data.postsCount < 4 ||
     post.record.reply ||
     textLower.includes('hello world') ||
     textLower.includes('hello, world') ||
-    textLower.includes('#furry') ||
-    textLower.includes('#furryart')
+    textLower.match(regex)?.length > 0
   ) {
     return true
   }
