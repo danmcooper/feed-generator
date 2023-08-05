@@ -207,13 +207,18 @@ const rejectPost = (post, author, maxFollowersAllowed) => {
     post.record.reply ||
     textLower.includes('hello world') ||
     textLower.includes('hello, world') ||
-    textLower.match(regex)?.length > 0
+    textLower.match(regex)?.length > 0 ||
+    containsTheseHashtags(textLower)
   ) {
     return true
   }
   return false
 }
 
+function containsTheseHashtags(text) {
+  const hashtags = /#bondage|#bdsm|#nsfw|#gay|#yiff|#dirtypaws|#anthro|#porn/i
+  return hashtags.test(text)
+}
 const passesCheck = (fullPost) => {
   if (fullPost.data.posts[0]?.labels[0]?.val?.length > 0) {
     return false
