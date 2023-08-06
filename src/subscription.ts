@@ -219,7 +219,6 @@ const languageReject = (text) => {
   const languages = lngDetector.detect(text)
   if (languages.length > 0) {
     if (rejectedLanguages.includes(languages[0][0])) {
-      console.log(`rejected language: ${languages[0][0]}`)
       return true
     }
   }
