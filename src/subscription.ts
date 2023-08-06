@@ -204,9 +204,9 @@ function profileContainsTerms(text) {
   return forbiddenTerms.test(textLower)
 }
 
-const hasImage = (post) => {
-  return post.record?.embed?.images?.length > 0
-}
+// const hasImage = (post) => {
+//   return post.record?.embed?.images?.length > 0
+// }
 
 const rejectPost = (post, author, maxFollowersAllowed) => {
   const textLower = post.record.text.toLowerCase()
@@ -218,7 +218,9 @@ const rejectPost = (post, author, maxFollowersAllowed) => {
     rejectList[post.author] = true
     return true
   }
-  if (hasImage(post) && profileContainsTerms(author.data.description)) {
+  if (profileContainsTerms(author.data.description)) {
+    // if (hasImage(post) && profileContainsTerms(author.data.description)) {
+
     rejectList[post.author] = true
     return true
   }
