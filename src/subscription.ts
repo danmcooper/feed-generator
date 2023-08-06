@@ -2,7 +2,11 @@ import {
   OutputSchema as RepoEvent,
   isCommit,
 } from './lexicon/types/com/atproto/sync/subscribeRepos'
-import { FirehoseSubscriptionBase, getOpsByType } from './util/subscription'
+import {
+  FirehoseSubscriptionBase,
+  getOpsByType,
+  rejectedLanguages,
+} from './util/subscription'
 import { AtpAgent } from '@atproto/api'
 
 const rejectList = {}
@@ -20,7 +24,7 @@ export class FirehoseSubscription extends FirehoseSubscriptionBase {
     if (!isCommit(evt)) return
     const ops = await getOpsByType(evt)
 
-    const { postsToCreate, postsToDelete } = await process(
+    const { postsToCreate, postsToDelete } = await processIt(
       ops,
       agent,
       MAX_THRESHOLD,
@@ -57,7 +61,7 @@ const postsByUri = {}
 const postsInDBByHour = {}
 let currentHourIndex = 0
 
-const process = async (
+const processIt = async (
   ops,
   agent,
   MAX_THRESHOLD,
@@ -208,6 +212,20 @@ function profileContainsTerms(text) {
 //   return post.record?.embed?.images?.length > 0
 // }
 
+const LanguageDetect = require('languagedetect')
+const lngDetector = new LanguageDetect()
+
+const languageReject = (text) => {
+  const languages = lngDetector.detect(text)
+  if (languages.length > 0) {
+    if (rejectedLanguages.includes(languages[0][0])) {
+      console.log(`rejected language: ${languages[0][0]}`)
+      return true
+    }
+  }
+  return false
+}
+
 const rejectPost = (post, author, maxFollowersAllowed) => {
   const textLower = post.record.text.toLowerCase()
   if (author.data.followersCount > maxFollowersAllowed) {
@@ -221,6 +239,10 @@ const rejectPost = (post, author, maxFollowersAllowed) => {
   if (profileContainsTerms(author.data.description)) {
     // if (hasImage(post) && profileContainsTerms(author.data.description)) {
 
+    rejectList[post.author] = true
+    return true
+  }
+  if (languageReject(textLower)) {
     rejectList[post.author] = true
     return true
   }

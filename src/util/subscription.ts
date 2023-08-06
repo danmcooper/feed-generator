@@ -16,6 +16,8 @@ import { AtpAgent } from '@atproto/api'
 import dotenv from 'dotenv'
 // import * as fs from 'node:fs/promises'
 
+export let rejectedLanguages
+
 export abstract class FirehoseSubscriptionBase {
   public sub: Subscription<RepoEvent>
 
@@ -50,6 +52,8 @@ export abstract class FirehoseSubscriptionBase {
   async run(subscriptionReconnectDelay: number) {
     try {
       dotenv.config()
+
+      rejectedLanguages = process.env.REJECTED_LANGUAGES?.split(' ') ?? []
 
       const handle = process.env.BLUESKY_HANDLE!
       const password = process.env.BLUESKY_PASSWORD!
