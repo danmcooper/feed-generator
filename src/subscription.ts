@@ -200,8 +200,12 @@ const cleanupOlderThan23Hours = (postsByUri) => {
 function profileContainsTerms(text) {
   const textLower = text?.toLowerCase() ?? ''
   const forbiddenTerms =
-    /(nsfw|lewd|18\+|\+18|18\↑|shirtless|Onlyfans|only\s*fans|of\s*model|thirst|fur|daddy|nudist|sub|subby|dom|domme|masochist|horny|furry|fursuit|anthro|porn|penis|cock|tits|nude|swer|suggestive|no\s*minors)/i
+    /(nsfw|transformation|paws|lewd|18\+|\+18|18\↑|shirtless|Onlyfans|only\s*fans|of\s*model|thirst|fur|daddy|nudist|sub|subby|dom|domme|masochist|horny|furry|fursuit|anthro|porn|penis|cock|tits|nude|swer|suggestive|no\s*minors)/i
   return forbiddenTerms.test(textLower)
+}
+
+const hasImage = (post) => {
+  return post.record?.embed?.images?.length > 0
 }
 
 const rejectPost = (post, author, maxFollowersAllowed) => {
@@ -214,7 +218,7 @@ const rejectPost = (post, author, maxFollowersAllowed) => {
     rejectList[post.author] = true
     return true
   }
-  if (profileContainsTerms(author.data.description)) {
+  if (hasImage(post) && profileContainsTerms(author.data.description)) {
     rejectList[post.author] = true
     return true
   }
