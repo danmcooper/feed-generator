@@ -200,7 +200,7 @@ const cleanupOlderThan23Hours = (postsByUri) => {
 function profileContainsTerms(text) {
   const textLower = text?.toLowerCase() ?? ''
   const forbiddenTerms =
-    /(nsfw|18\+|\+18|fur|daddy|nudist|sub|subby|dom|domme|masochist|horny|furry|fursuit|anthro|porn|penis|cock|cum|tits|nude|swer)/i
+    /(nsfw|18\+|\+18|fur|daddy|nudist|sub|subby|dom|domme|masochist|horny|furry|fursuit|anthro|porn|penis|cock|cum|tits|nude|swer|suggestive|no\s*minors)/i
   return forbiddenTerms.test(textLower)
 }
 
