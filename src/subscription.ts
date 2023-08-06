@@ -108,6 +108,8 @@ const process = async (
       actor: post.author,
     })
 
+    // console.log(`author: ${JSON.stringify(author, null, 2)}`)
+
     if (rejectPost(post, author, maxFollowersAllowed)) continue
 
     // add to map
@@ -195,6 +197,13 @@ const cleanupOlderThan23Hours = (postsByUri) => {
   })
 }
 
+function profileContainsTerms(text) {
+  const textLower = text?.toLowerCase() ?? ''
+  const forbiddenTerms =
+    /(nsfw|18\+|\+18|fur|daddy|nudist|sub|subby|dom|domme|masochist|horny|furry|fursuit|anthro|porn|penis|cock|cum|tits|nude|swer)/i
+  return forbiddenTerms.test(textLower)
+}
+
 const rejectPost = (post, author, maxFollowersAllowed) => {
   const textLower = post.record.text.toLowerCase()
   if (author.data.followersCount > maxFollowersAllowed) {
@@ -205,6 +214,14 @@ const rejectPost = (post, author, maxFollowersAllowed) => {
     rejectList[post.author] = true
     return true
   }
+  if (profileContainsTerms(author.data.description)) {
+    console.log(
+      `rejecting ${post.author} because of ${author.data.description}}`,
+    )
+    rejectList[post.author] = true
+    return true
+  }
+
   const regex = /#.*fur.*?/gi
   if (
     author.data.postsCount < 4 ||
