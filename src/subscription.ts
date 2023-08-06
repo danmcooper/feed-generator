@@ -201,6 +201,10 @@ const rejectPost = (post, author, maxFollowersAllowed) => {
     rejectList[post.author] = true
     return true
   }
+  if (author.data.viewer.muted || author.data.viewer.blockedBy) {
+    rejectList[post.author] = true
+    return true
+  }
   const regex = /#.*fur.*?/gi
   if (
     author.data.postsCount < 4 ||
