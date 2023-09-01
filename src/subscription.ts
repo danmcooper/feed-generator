@@ -252,6 +252,7 @@ const rejectPost = (post, author, maxFollowersAllowed) => {
     post.record.reply ||
     textLower.includes('hello world') ||
     textLower.includes('hello, world') ||
+    textLower.includes('fcf') ||
     textLower.match(regex)?.length > 0 ||
     containsTheseHashtags(textLower)
   ) {
@@ -261,7 +262,8 @@ const rejectPost = (post, author, maxFollowersAllowed) => {
 }
 
 function containsTheseHashtags(text) {
-  const hashtags = /#bondage|#bdsm|#nsfw|#gay|#yiff|#dirtypaws|#anthro|#porn/i
+  const hashtags =
+    /#bondage|#bdsm|#fcf|#nsfw|#gay|#yiff|#dirtypaws|#anthro|#porn/i
   return hashtags.test(text)
 }
 const passesCheck = (fullPost) => {
