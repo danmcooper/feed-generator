@@ -54,7 +54,7 @@ export class FirehoseSubscription extends FirehoseSubscriptionBase {
 const showCount = async (db) => {
   const { count } = db.fn
   const posts = await db.selectFrom('post').select(count('cid')).execute()
-  console.log(`post count: ${posts[0]['count("cid")']}`)
+  // console.log(`post count: ${posts[0]['count("cid")']}`)
 }
 
 const postsByUri = {}
@@ -90,13 +90,13 @@ const processIt = async (
 
   if (currentHourIndex !== currentHour) {
     postsToDelete = [...postsToDelete, ...(postsInDBByHour[currentHour] ?? [])]
-    console.log(
-      `deleting posts from hour ${currentHour}: ${JSON.stringify(
-        postsInDBByHour[currentHour],
-        null,
-        2,
-      )}`,
-    )
+    // console.log(
+    //   `deleting posts from hour ${currentHour}: ${JSON.stringify(
+    //     postsInDBByHour[currentHour],
+    //     null,
+    //     2,
+    //   )}`,
+    // )
     currentHourIndex = currentHour
     postsInDBByHour[currentHourIndex] = []
     cleanupOlderThan23Hours(postsByUri)
@@ -195,7 +195,7 @@ const entersThreshold = (post, minThreshold, maxThreshold, minAge, maxAge) => {
 const cleanupOlderThan23Hours = (postsByUri) => {
   Object.keys(postsByUri).forEach((uri) => {
     if (postsByUri[uri].time < new Date().getTime() - 23 * 60 * 60 * 1000) {
-      console.log(`removing post ${uri} from memory`)
+      // console.log(`removing post ${uri} from memory`)
       delete postsByUri[uri]
     }
   })
@@ -237,7 +237,7 @@ const rejectPost = (post, author, maxFollowersAllowed) => {
   }
   if (profileContainsTerms(author.data.description)) {
     // if (hasImage(post) && profileContainsTerms(author.data.description)) {
-    console.log(`rejecting ${author.data.description}`)
+    // console.log(`rejecting ${author.data.description}`)
     rejectList[post.author] = true
     return true
   }
